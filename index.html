@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Schema Markup Checker | LLM & SEO View</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter",
+        "Segoe UI", sans-serif;
+      background: #050816;
+      color: #f5f5f5;
+    }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+    h1 {
+      font-size: 26px;
+      margin: 0 0 8px;
+    }
+    .subtitle {
+      color: #c0c7ff;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 18px;
+    }
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card {
+      background: #0b1020;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 14px 14px 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 11px;
+      background: rgba(76, 175, 80, 0.1);
+      color: #9be8a5;
+      border: 1px solid rgba(155, 232, 165, 0.6);
+      white-space: nowrap;
+    }
+    textarea {
+      width: 100%;
+      min-height: 360px;
+      max-height: 70vh;
+      resize: vertical;
+      padding: 10px 11px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #030712;
+      color: #e5e7eb;
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+        Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #4ade80;
+      box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.4);
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0 10px;
+      gap: 8px;
+    }
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #00e692, #22c55e);
+      color: #022c22;
+      box-shadow: 0 12px 28px rgba(16, 185, 129, 0.5);
+    }
+    .btn-primary:active {
+      transform: translateY(1px);
+      box-shadow: 0 6px 14px rgba(16, 185, 129, 0.5);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: #9ca3af;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+    .btn-ghost:hover {
+      border-color: rgba(209, 213, 219, 0.8);
+      color: #e5e7eb;
+    }
+    .hint {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+    .hint code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 10px;
+    }
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .pill {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #e5e7eb;
+    }
+    .pill.bad {
+      border-color: rgba(248, 113, 113, 0.7);
+      color: #fecaca;
+      background: rgba(127, 29, 29, 0.6);
+    }
+    .pill.good {
+      border-color: rgba(74, 222, 128, 0.8);
+      color: #bbf7d0;
+      background: rgba(5, 46, 22, 0.9);
+    }
+    .pill.warn {
+      border-color: rgba(250, 204, 21, 0.8);
+      color: #fef9c3;
+      background: rgba(113, 63, 18, 0.9);
+    }
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+      margin: 10px 0 4px;
+    }
+    .section-label span {
+      color: #e5e7eb;
+    }
+    .results-scroll {
+      max-height: 380px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .schema-block {
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 8px 9px;
+      margin-bottom: 8px;
+    }
+    .schema-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .schema-type {
+      font-size: 12px;
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+    .schema-meta {
+      font-size: 10px;
+      color: #9ca3af;
+    }
+    pre {
+      margin: 0;
+      padding: 6px 7px;
+      background: #020617;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #e5e7eb;
+      overflow-x: auto;
+    }
+    .issue-list {
+      margin: 4px 0 0;
+      padding-left: 16px;
+      font-size: 11px;
+      color: #fecaca;
+    }
+    .issue-list li {
+      margin-bottom: 2px;
+    }
+    .good-list {
+      margin: 4px 0 0;
+      padding-left: 16px;
+      font-size: 11px;
+      color: #bbf7d0;
+    }
+    .good-list li {
+      margin-bottom: 2px;
+    }
+    .empty-state {
+      font-size: 12px;
+      color: #9ca3af;
+      padding: 10px 8px;
+      border-radius: 8px;
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #16a34a;
+    }
+    .status-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+    .status-row.bad .status-dot {
+      background: #dc2626;
+    }
+    .status-row.warn .status-dot {
+      background: #facc15;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Schema Markup Checker</h1>
+    <div class="subtitle">
+      Paste your page HTML & see which <strong>JSON-LD schemas</strong> exist,
+      what’s broken, and what you should add for better SEO & LLM understanding.
+    </div>
+
+    <div class="layout">
+      <!-- LEFT: INPUT -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">1. Paste page HTML (View Source)</div>
+          <div class="badge">
+            <span>Raw HTML</span> <span>👀 LLM view</span>
+          </div>
+        </div>
+        <textarea
+          id="htmlInput"
+          placeholder="Right-click your page → View Page Source → Ctrl+A → Ctrl+C → paste here..."
+        ></textarea>
+        <div class="controls">
+          <button class="btn btn-primary" id="analyzeBtn">
+            ⚙️ Check Schema
+          </button>
+          <button class="btn btn-ghost" id="clearBtn">Clear</button>
+        </div>
+        <div class="hint">
+          Tip: Test pages you’re auditing. For example:
+          <code>https://www.yourdomain.com/blog/</code> →
+          View Source → paste here.
+        </div>
+      </div>
+
+      <!-- RIGHT: RESULTS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">2. Results & Recommendations</div>
+          <div id="summaryStatus" class="status-row">
+            <span class="status-dot"></span>
+            <span>Waiting for input…</span>
+          </div>
+        </div>
+
+        <div class="results-scroll" id="results">
+          <div class="empty-state">
+            No HTML analyzed yet.<br />
+            Paste your source on the left and click
+            <strong>“Check Schema”</strong> to see:
+            <ul>
+              <li>All <code>&lt;script type="application/ld+json"&gt;</code></li>
+              <li>Schema types: WebSite, Organization, Article, Product…</li>
+              <li>Missing recommended fields per schema type</li>
+              <li>Broken / invalid JSON-LD</li>
+              <li>High-level improvement ideas</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const htmlInput = document.getElementById("htmlInput");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const resultsEl = document.getElementById("results");
+    const summaryStatus = document.getElementById("summaryStatus");
+
+    function setStatus(state, text) {
+      summaryStatus.className = "status-row " + (state || "");
+      summaryStatus.querySelector("span:nth-child(2)").textContent =
+        text || "";
+    }
+
+    function safeJsonParse(raw, idx) {
+      try {
+        const trimmed = raw.trim();
+        if (!trimmed) return { error: "Empty JSON-LD block." };
+        const parsed = JSON.parse(trimmed);
+        return { value: parsed };
+      } catch (e) {
+        return {
+          error: `Invalid JSON in script #${idx + 1}: ${e.message}`,
+        };
+      }
+    }
+
+    function asArray(maybe) {
+      if (Array.isArray(maybe)) return maybe;
+      if (maybe && typeof maybe === "object") return [maybe];
+      return [];
+    }
+
+    function getTypesFromNode(node) {
+      if (!node) return [];
+      const t = node["@type"];
+      if (!t) return [];
+      if (Array.isArray(t)) return t.map(String);
+      return [String(t)];
+    }
+
+    function summarizeTypes(allSchemas) {
+      const map = new Map();
+      for (const obj of allSchemas) {
+        const types = getTypesFromNode(obj);
+        for (const t of types) {
+          map.set(t, (map.get(t) || 0) + 1);
+        }
+      }
+      return map;
+    }
+
+    function checkSchemaObject(obj) {
+      const types = getTypesFromNode(obj);
+      const issues = [];
+      const goods = [];
+
+      if (types.length === 0) {
+        issues.push("Missing '@type' property.");
+      }
+
+      // Generic recommendations
+      if (!obj["@id"]) {
+        issues.push("Consider adding '@id' with a stable URL/fragment.");
+      }
+      if (!obj["url"] && !obj["mainEntityOfPage"]) {
+        issues.push(
+          "Missing 'url' / 'mainEntityOfPage' – helps tie schema to the page URL."
+        );
+      }
+
+      // Type-specific checks
+      if (types.includes("Organization")) {
+        if (!obj["name"]) issues.push("Organization: missing 'name'.");
+        else goods.push("Organization: has 'name'.");
+        if (!obj["logo"]) issues.push("Organization: missing 'logo'.");
+        else goods.push("Organization: has 'logo'.");
+        if (!obj["sameAs"]) {
+          issues.push(
+            "Organization: add 'sameAs' with key profiles (LinkedIn, X, etc.) for stronger entity signals."
+          );
+        }
+      }
+
+      if (types.includes("WebSite")) {
+        if (!obj["name"]) issues.push("WebSite: missing 'name'.");
+        else goods.push("WebSite: has 'name'.");
+        if (!obj["potentialAction"]) {
+          issues.push(
+            "WebSite: consider adding 'potentialAction' (SearchAction) for site search markup."
+          );
+        } else {
+          goods.push("WebSite: has 'potentialAction' (SearchAction).");
+        }
+      }
+
+      if (types.includes("Article") || types.includes("BlogPosting")) {
+        const label = types.includes("BlogPosting") ? "BlogPosting" : "Article";
+        if (!obj["headline"]) issues.push(`${label}: missing 'headline'.`);
+        else goods.push(`${label}: has 'headline'.`);
+        if (!obj["image"])
+          issues.push(`${label}: add 'image' (URL or ImageObject).`);
+        if (!obj["datePublished"])
+          issues.push(`${label}: missing 'datePublished'.`);
+        else goods.push(`${label}: has 'datePublished'.`);
+        if (!obj["author"])
+          issues.push(`${label}: missing 'author' (Person/Organization).`);
+        else goods.push(`${label}: has 'author'.`);
+        if (!obj["mainEntityOfPage"])
+          issues.push(
+            `${label}: consider 'mainEntityOfPage' pointing to the canonical URL.`
+          );
+      }
+
+      if (types.includes("Product")) {
+        if (!obj["name"]) issues.push("Product: missing 'name'.");
+        else goods.push("Product: has 'name'.");
+        if (!obj["offers"])
+          issues.push(
+            "Product: missing 'offers' – important for price/availability in rich results."
+          );
+        if (!obj["aggregateRating"]) {
+          issues.push(
+            "Product: add 'aggregateRating' if you legitimately have review data."
+          );
+        }
+      }
+
+      if (types.includes("BreadcrumbList")) {
+        if (!Array.isArray(obj["itemListElement"])) {
+          issues.push("BreadcrumbList: 'itemListElement' should be an array.");
+        } else {
+          goods.push(
+            `BreadcrumbList: ${obj["itemListElement"].length} breadcrumb items.`
+          );
+        }
+      }
+
+      if (issues.length === 0) {
+        goods.push("No obvious missing core fields detected for this type.");
+      }
+
+      return { issues, goods };
+    }
+
+    function analyzeHtml(html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const scripts = doc.querySelectorAll(
+        'script[type="application/ld+json"]'
+      );
+
+      const blocks = [];
+      const allObjs = [];
+      const errors = [];
+
+      scripts.forEach((el, idx) => {
+        const raw = el.textContent || el.innerText || "";
+        const parsed = safeJsonParse(raw, idx);
+        if (parsed.error) {
+          errors.push(parsed.error);
+          blocks.push({
+            index: idx,
+            raw,
+            jsonError: parsed.error,
+            objects: [],
+          });
+        } else {
+          const arr = asArray(parsed.value);
+          arr.forEach((o) => allObjs.push(o));
+          blocks.push({
+            index: idx,
+            raw,
+            jsonError: null,
+            objects: arr,
+          });
+        }
+      });
+
+      const typeSummary = summarizeTypes(allObjs);
+
+      return {
+        blocks,
+        allObjs,
+        typeSummary,
+        errors,
+      };
+    }
+
+    function renderResults(report) {
+      const { blocks, allObjs, typeSummary, errors } = report;
+
+      if (!blocks.length) {
+        resultsEl.innerHTML = `
+          <div class="empty-state">
+            <strong>No JSON-LD schema blocks found.</strong><br/>
+            This page doesn’t expose <code>&lt;script type="application/ld+json"&gt;</code> in the HTML you pasted.
+            <ul>
+              <li>Add at least <strong>Organization</strong> + <strong>WebSite</strong> schema on important pages.</li>
+              <li>For blogs: add <strong>Article</strong> or <strong>BlogPosting</strong> schema.</li>
+              <li>For products/SaaS plans: add <strong>Product</strong> + <strong>Offer</strong>.</li>
+            </ul>
+          </div>
+        `;
+        setStatus(
+          "warn",
+          "No JSON-LD detected. You’re missing structured data opportunities."
+        );
+        return;
+      }
+
+      const hasCriticalErrors = errors.length > 0;
+      const uniqueTypes = Array.from(typeSummary.keys());
+
+      if (hasCriticalErrors) {
+        setStatus(
+          "bad",
+          `Found ${blocks.length} JSON-LD blocks (${uniqueTypes.length} type(s)), but some are invalid.`
+        );
+      } else {
+        setStatus(
+          "good",
+          `Found ${blocks.length} JSON-LD blocks and ${uniqueTypes.length} schema type(s).`
+        );
+      }
+
+      let html = "";
+
+      // Summary section
+      html += `<div class="section-label">Summary <span>(${allObjs.length} object${
+        allObjs.length !== 1 ? "s" : ""
+      })</span></div>`;
+      html += `<div class="pill-row">`;
+      uniqueTypes.forEach((t) => {
+        html += `<div class="pill good">${t} × ${typeSummary.get(t)}</div>`;
+      });
+      if (hasCriticalErrors) {
+        html += `<div class="pill bad">Some JSON-LD blocks are invalid JSON – fix parsing first.</div>`;
+      }
+      html += `</div>`;
+
+      // Improvement hints
+      html += `<div class="section-label">High-level suggestions</div><div class="pill-row">`;
+
+      const typeSet = new Set(uniqueTypes);
+
+      if (!typeSet.has("Organization")) {
+        html += `<div class="pill warn">No <strong>Organization</strong> schema – add for brand/entity clarity.</div>`;
+      }
+      if (!typeSet.has("WebSite")) {
+        html += `<div class="pill warn">No <strong>WebSite</strong> schema – add with SearchAction for sitelinks search box.</div>`;
+      }
+      if (
+        !typeSet.has("Article") &&
+        !typeSet.has("BlogPosting") &&
+        /article|blog/i.test(htmlInput.value)
+      ) {
+        html += `<div class="pill warn">Looks like a content page – consider <strong>Article/BlogPosting</strong> schema.</div>`;
+      }
+      if (!typeSet.has("BreadcrumbList")) {
+        html += `<div class="pill">Add <strong>BreadcrumbList</strong> on deep pages for better internal structure.</div>`;
+      }
+
+      html += `</div>`;
+
+      // Blocks
+      html += `<div class="section-label">Per-block details</div>`;
+
+      blocks.forEach((block, i) => {
+        const indexLabel = i + 1;
+        const objCount = block.objects.length;
+        const typeLabels = [];
+        block.objects.forEach((o) => {
+          getTypesFromNode(o).forEach((t) => typeLabels.push(t));
+        });
+
+        html += `<div class="schema-block">`;
+        html += `<div class="schema-header">
+          <div>
+            <div class="schema-type">JSON-LD block #${indexLabel}</div>
+            <div class="schema-meta">${
+              objCount
+                ? objCount + " object" + (objCount !== 1 ? "s" : "")
+                : "No valid object parsed"
+            }${
+          typeLabels.length
+            ? " · Types: " +
+              Array.from(new Set(typeLabels))
+                .slice(0, 4)
+                .join(", ")
+            : ""
+        }</div>
+          </div>
+        </div>`;
+
+        if (block.jsonError) {
+          html += `<div class="pill bad" style="margin-bottom:6px;">${block.jsonError}</div>`;
+        }
+
+        block.objects.forEach((obj, j) => {
+          const types = getTypesFromNode(obj);
+          const { issues, goods } = checkSchemaObject(obj);
+
+          html += `<div style="margin-bottom:6px;">`;
+          html += `<div class="schema-meta">Object ${
+            j + 1
+          } ${types.length ? "· " + types.join(", ") : ""}</div>`;
+
+          if (goods.length) {
+            html += `<ul class="good-list">`;
+            goods.forEach((g) => {
+              html += `<li>${g}</li>`;
+            });
+            html += `</ul>`;
+          }
+          if (issues.length) {
+            html += `<ul class="issue-list">`;
+            issues.forEach((iss) => {
+              html += `<li>${iss}</li>`;
+            });
+            html += `</ul>`;
+          }
+          html += `</div>`;
+        });
+
+        // raw preview (truncated)
+        let pretty = block.raw.trim();
+        if (pretty.length > 1200) {
+          pretty = pretty.slice(0, 1200) + "\n… (truncated)";
+        }
+        html += `<pre>${pretty
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</pre>`;
+
+        html += `</div>`;
+      });
+
+      resultsEl.innerHTML = html;
+    }
+
+    analyzeBtn.addEventListener("click", () => {
+      const raw = htmlInput.value.trim();
+      if (!raw) {
+        setStatus("warn", "Paste HTML first, then click Check Schema.");
+        resultsEl.innerHTML = `
+          <div class="empty-state">
+            No HTML input detected. Paste your <strong>View Source</strong> HTML first.
+          </div>
+        `;
+        return;
+      }
+      setStatus("", "Analyzing schema…");
+      try {
+        const report = analyzeHtml(raw);
+        renderResults(report);
+      } catch (e) {
+        console.error(e);
+        setStatus("bad", "Error while analyzing HTML.");
+        resultsEl.innerHTML = `
+          <div class="empty-state">
+            Something went wrong while parsing the HTML. Double-check that you pasted valid page source.
+          </div>
+        `;
+      }
+    });
+
+    clearBtn.addEventListener("click", () => {
+      htmlInput.value = "";
+      resultsEl.innerHTML = `
+        <div class="empty-state">
+          Cleared. Paste new HTML and click <strong>“Check Schema”</strong>.
+        </div>
+      `;
+      setStatus("", "Waiting for input…");
+    });
+  </script>
+</body>
+</html>
